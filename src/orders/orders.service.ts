@@ -5,7 +5,7 @@ import { ClientProxy, RpcException } from '@nestjs/microservices'
 import { OrderPaginationDto } from './dto/order-pagination.dto'
 import { ChangeOrderStatusDto } from './dto'
 import { catchError, firstValueFrom } from 'rxjs'
-import { NATS_SERVICE } from 'src/config/service'
+import { NATS_SERVICE } from 'src/config/services'
 import { OrderWithProducts } from './interfaces/order-with-products.interface'
 import { PaidOrderDto } from './dto/paid-order.dto'
 
