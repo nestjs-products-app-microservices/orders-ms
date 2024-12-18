@@ -6,6 +6,8 @@ import { OrderPaginationDto } from './dto/order-pagination.dto'
 import { ChangeOrderStatusDto } from './dto'
 import { catchError, firstValueFrom } from 'rxjs'
 import { NATS_SERVICE } from 'src/config/service'
+import { OrderWithProducts } from './interfaces/order-with-products.interface'
+import { PaidOrderDto } from './dto/paid-order.dto'
 
 @Injectable()
 export class OrdersService extends PrismaClient implements OnModuleInit {
@@ -35,7 +37,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
         )
     )
 
-    const totalAmount = createOrderDto.items.reduce((acc, orderItem) =>  {
+    const totalAmount = createOrderDto.items.reduce((acc, orderItem) => {
       const price = products.find(product => product.id === orderItem.productId).price
       return acc + orderItem.quantity * price
     }, 0)
@@ -143,4 +145,49 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
       data: { status }
     })
   }
+
+  async createPaymentSession(order: OrderWithProducts) {
+
+    const sessionDto = {
+      orderId: order.id,
+      currency: 'usd',
+      items: order.items.map(item => ({
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      }))
+    }
+
+    const paymentSession = await firstValueFrom(
+      this.client.send('create.payment.session', sessionDto)
+        .pipe(
+          catchError(err => { throw new RpcException(err) })
+        )
+    )
+
+    return paymentSession
+  }
+
+  async paidOrder(paidOrderDto: PaidOrderDto) {
+    const { orderId, receiptUrl, stripePaymentId } = paidOrderDto
+
+    const updatedOrder = await this.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'PAID',
+        paid: true,
+        paidAt: new Date(),
+        stripeChargeId: stripePaymentId,
+
+        receipt: {
+          create: {
+            receiptUrl: receiptUrl
+          }
+        }
+      }
+    })
+
+    return updatedOrder
+  }
+
 }
