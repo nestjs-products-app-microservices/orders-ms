@@ -18,3 +18,6 @@ availableSecrets:
   secretManager:
   - versionName: projects/94395819889/secrets/orders_ms_db_url/versions/1
     env: 'DATABASE_URL'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
